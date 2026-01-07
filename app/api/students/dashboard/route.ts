@@ -29,11 +29,14 @@ export async function GET() {
     // 4. Fetch Matching Jobs
     // IMPORTANT: Make sure the course string in your DB exactly matches
     // the strings you put in the JobDrive eligibleCourses array
-    const matchingDrives = await JobDrive.find({
-      status: "Open",
-      eligibleCourses: student.course,
-    }).sort({ createdAt: -1 });
 
+    const studentCourse = student.course.trim(); // Remove any hidden trailing spaces
+    const matchingDrives = await JobDrive.find({
+      // status: "Open",
+      registrationOpen: true, // Ensure we only show drives marked as Open by Admin
+      eligibleCourses: { $in: [studentCourse] }, // Use $in for array comparison
+    }).sort({ createdAt: -1 });
+    console.log(matchingDrives);
     return NextResponse.json({ student, drives: matchingDrives });
   } catch (error: any) {
     console.error("Dashboard Error:", error);
