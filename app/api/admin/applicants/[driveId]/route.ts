@@ -9,6 +9,7 @@ export async function GET(
 ) {
   try {
     await dbConnect();
+    console.log("req came");
     // Use populate to join the Student data automatically
     const applicants = await Application.find({ driveId: params.driveId })
       .populate("studentId")
