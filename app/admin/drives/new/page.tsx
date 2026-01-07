@@ -1,27 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
 import { useRouter } from "next/navigation";
 
 export default function CreateDrivePage() {
     const router = useRouter();
+    const [courses, setCourses] = useState<string[]>([]); // Dynamic courses state
+    const [loadingCourses, setLoadingCourses] = useState(true);
+
     const [formData, setFormData] = useState({
         companyName: "",
         jobRole: "",
         salary: "",
         deadline: "",
-        eligibleCourses: "", // We will split this string into an array
+        eligibleCourses: [] as string[],
         description: "",
+        minCgpa: 0, // Added minCgpa to form
     });
+
+    // Fetch unique courses from the database
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const res = await fetch("/api/admin/courses");
+                if (res.ok) {
+                    const data = await res.json();
+                    setCourses(data);
+                }
+            } catch (err) {
+                console.error("Failed to load courses", err);
+            } finally {
+                setLoadingCourses(false);
+            }
+        };
+        fetchCourses();
+    }, []);
+
+    const toggleCourse = (course: string) => {
+        setFormData(prev => ({
+            ...prev,
+            eligibleCourses: prev.eligibleCourses.includes(course)
+                ? prev.eligibleCourses.filter(c => c !== course)
+                : [...prev.eligibleCourses, course]
+        }));
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const coursesArray = formData.eligibleCourses.split(",").map(c => c.trim());
 
         const response = await fetch("/api/drives", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...formData, eligibleCourses: coursesArray }),
+            body: JSON.stringify({ ...formData }),
         });
 
         if (response.ok) {
@@ -35,6 +65,7 @@ export default function CreateDrivePage() {
             <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md text-black">
                 <h1 className="text-2xl font-bold mb-6 text-gray-800">Create Recruitment Drive</h1>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* ... (Company Name, Role, Salary, Deadline fields remain same) ... */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Company Name</label>
                         <input
@@ -73,15 +104,40 @@ export default function CreateDrivePage() {
                             />
                         </div>
                     </div>
+
+                    {/* Minimum CGPA Requirement */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Eligible Courses (Comma separated)</label>
+                        <label className="block text-sm font-medium text-gray-700">Minimum CGPA Criteria</label>
                         <input
-                            type="text"
-                            placeholder="B C A, B Sc Computer Science"
+                            type="number"
+                            step="0.01"
+                            placeholder="e.g. 7.5"
                             className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
-                            onChange={(e) => setFormData({ ...formData, eligibleCourses: e.target.value })}
+                            onChange={(e) => setFormData({ ...formData, minCgpa: parseFloat(e.target.value) || 0 })}
                         />
                     </div>
+
+                    {/* Dynamic Course Selection */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Eligible Courses (fetched from DB)</label>
+                        {loadingCourses ? (
+                            <p className="text-gray-400 text-xs animate-pulse">Loading course list...</p>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md bg-gray-50">
+                                {courses.map(course => (
+                                    <label key={course} className="flex items-center space-x-2 p-2 border bg-white rounded hover:bg-blue-50 cursor-pointer transition-colors">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.eligibleCourses.includes(course)}
+                                            onChange={() => toggleCourse(course)}
+                                        />
+                                        <span className="text-xs font-medium">{course}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Job Description</label>
                         <textarea

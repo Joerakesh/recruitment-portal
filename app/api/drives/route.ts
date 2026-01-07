@@ -6,9 +6,16 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const newDrive = await JobDrive.create(body);
+    const newDrive = await JobDrive.create({
+      ...body,
+      registrationOpen: true,
+    });
+    console.log(newDrive);
     return NextResponse.json(
-      { success: true, data: newDrive },
+      {
+        success: true,
+        data: newDrive,
+      },
       { status: 201 }
     );
   } catch (error: any) {
