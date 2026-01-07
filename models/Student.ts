@@ -22,6 +22,7 @@ export interface IStudent extends Document {
     passingYear: number;
     boe: string;
     hscRegNo: string;
+    cgpa: number;
   };
   personal: {
     fatherName: string;
@@ -64,6 +65,12 @@ const StudentSchema: Schema = new Schema(
       passingYear: Number,
       boe: String,
       hscRegNo: String,
+      cgpa: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 10,
+      },
     },
     personal: {
       fatherName: String,
